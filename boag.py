@@ -117,6 +117,7 @@ class Arena(object):
             elif action == "move":
                 entity.position += param
         self.entities += births
+        self.prune()
         if not self.check_valid():
             return False
         return not self.check_win()
