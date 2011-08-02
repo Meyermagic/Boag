@@ -3,7 +3,7 @@ import pygame
 from pygame.locals import *
 from time import sleep
 from vector import Vector
-from random import choice, randint
+from random import choice, randint, shuffle
 from itertools import product
 
 class Entity(object):
@@ -98,7 +98,7 @@ class Arena(object):
         for entity in self.entities:
             entity.tentative = entity.act(self.entities)
             if entity.type == "player":
-                print "Player", entity.player_number, entity.tentative, "at", entity.position
+                print "Player", entity.player_number, entity.tentative, "at", entity.position, "with", entity.ammo, "shots remaining."
         births = []
         #Actually implement the actions
         for entity in self.entities:
@@ -232,7 +232,7 @@ class SafeAndAttack(PlayItSafe):
 
 class CloseInAttack(PlayItSafe):
     def act(self, entities):
-        possible = product(["fire", "move"], [(0, 1), (0, -1), (-1, 0), (1, 0)])
+        possible = [('fire', (0, 1)), ('fire', (0, -1)), ('fire', (-1, 0)), ('fire', (1, 0)), ('move', (0, 1)), ('move', (0, -1)), ('move', (-1, 0)), ('move', (1, 0))]
         self.states["current"] = entities
         legal = filter(self.is_legal, possible)
         viable = filter(self.is_viable, legal)
@@ -265,17 +265,58 @@ class CloseInAttack(PlayItSafe):
                     return tent
         return choice(choices)
 
+class CornerAttacker(PlayItSafe):
+    def act(self, entities):
+        possible = [('fire', (0, 1)), ('fire', (0, -1)), ('fire', (-1, 0)), ('fire', (1, 0)), ('move', (0, 1)), ('move', (0, -1)), ('move', (-1, 0)), ('move', (1, 0))]
+        self.states["current"] = entities
+        legal = filter(self.is_legal, possible)
+        viable = filter(self.is_viable, legal)
+        safe = filter(self.is_safe, viable)
+        choices = []
+        if len(safe) != 0:
+            choices = safe
+        elif len(viable) != 0:
+            choices = viable
+        else:
+            #If there are no viable moves, then we should surrender.
+            #return ("surrender", None)
+            choices = legal
+        enemy, bullets = self.sort(entities)
+        enemy = enemy[0]
+        epos = enemy.position
+        corners = [epos + (1, 1), epos + (-1, -1), epos + (-1, 1), epos + (1, -1)]
+        if self.position in corners:
+            tcs = [("fire", ((enemy.position - self.position).direction().x, 0)), ("fire", (0, (enemy.position - self.position).direction().y))]
+            shuffle(tcs)
+            for tent in tcs:
+                if tent in choices:
+                    return tent
+        else:
+            corners.sort(key=lambda p: abs(p - self.position))
+            target = corners[0]
+            diffx = abs(target.x - self.position.x)
+            diffy = abs(target.y - self.position.y)
+            if diffx >= diffy:
+                tent = ("move", ((target - self.position).direction().x, 0))
+                if tent in choices:
+                    return tent
+            else:
+                tent = ("move", (0, (target - self.position).direction().y))
+                if tent in choices:
+                    return tent
+        return choice(choices)
+
 if __name__ == "__main__":
     pygame.init()
     size = (800, 800)
     screen = pygame.display.set_mode(size)
-    game = Arena(Vector(20, 20), CloseInAttack, CloseInAttack)
+    game = Arena(Vector(20, 20), CornerAttacker, PlayItSafe)
     turns = 0
     while game.step():
         turns += 1
         print "Round", turns, "complete."
         draw(game, screen)
-        sleep(0.05)
+        sleep(0.1)
     print "Game over in", turns + 1, "rounds."
 
 

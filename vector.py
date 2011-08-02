@@ -30,3 +30,5 @@ class Vector(object):
         return (self.x, self.y)
     def direction(self):
         return Vector(cmp(self.x, 0), cmp(self.y, 0))
+    def __abs__(self):
+        return abs(self.x) + abs(self.y)
