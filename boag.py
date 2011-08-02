@@ -239,7 +239,7 @@ if __name__ == "__main__":
         turns += 1
         print "Round", turns, "complete."
         draw(game, screen)
-        sleep(0.01)
+        sleep(0.05)
     print "Game over in", turns + 1, "rounds."
 
 
