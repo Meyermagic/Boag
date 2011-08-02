@@ -31,6 +31,8 @@ class Vector(object):
         if isinstance(other, tuple):
             return Vector(self.x - other[0], self.y - other[1])
         return Vector(self.x - other.x, self.y - other.y)
+    def to_tuple(self):
+        return (self.x, self.y)
     def direction(self):
         return Vector(cmp(self.x, 0), cmp(self.y, 0))
 
@@ -139,19 +141,30 @@ class PlayerA(Player):
 class PlayerB(Player):
     def act(self, entities):
         players, bullets = self.sort(entities)
-        return ("fire", (1, 0))
+        return ("fire", (-1, 0))
 
+def draw(arena, screen):
+    new = pygame.Surface((arena.size.x, arena.size.y))
+    for entity in arena.entities:
+        if entity.type == "player":
+            new.set_at(entity.position.to_tuple(), (255, 0, 0))
+        else:
+            new.set_at(entity.position.to_tuple(), (255, 255, 255))
+    screen.blit(pygame.transform.scale(new, screen.get_size()), (0, 0))
+    pygame.display.update()
 
 if __name__ == "__main__":
     pygame.init()
+    size = (800, 800)
+    screen = pygame.display.set_mode(size)
     game = Arena(Vector(20, 20), PlayerA, PlayerB)
     turns = 0
     while game.step():
         turns += 1
         print "Round", turns, "complete."
+        draw(game, screen)
         sleep(1)
     print "Game over in", turns + 1, "rounds."
-
 
 
 
