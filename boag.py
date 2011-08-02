@@ -25,6 +25,14 @@ class Vector(object):
         if not isinstance(other, Vector):
             return False
         return self.x == other.x and self.y == other.y
+    def __invert__(self):
+        return Vector(-self.x, -self.y)
+    def __sub__(self, other):
+        if isinstance(other, tuple):
+            return Vector(self.x - other[0], self.y - other[1])
+        return Vector(self.x - other.x, self.y - other.y)
+    def direction(self):
+        return Vector(cmp(self.x, 0), cmp(self.y, 0))
 
 class Entity(object):
     def __init__(self, position):
@@ -42,9 +50,13 @@ class Bullet(Entity):
         return ("move", self.direction)
 
 class Player(Entity):
-    def __init__(self, position, ammo=128):
+    player_number = 0
+    def __init__(self, position, ammo=256):
+        Player.player_number += 1
+        self.player_number = Player.player_number
         self.type = "player"
         self.ammo = ammo
+        self.states = dict()
         super(Player, self).__init__(position)
     def sort(self, entities):
         other_players = []
@@ -60,10 +72,26 @@ class Arena(object):
     def __init__(self, size, player1, player2):
         self.size = size
         self.entities = [player1(Vector(0, 0)), player2(size + (-1, -1))]
+    def sort(self, entities):
+        players = []
+        bullets = []
+        for entity in entities:
+            if entity.type == "bullet":
+                bullets.append(entity)
+            elif entity.type == "player":
+                players.append(entity)
+        return players, bullets
     def check_valid(self):
         return True
     def check_win(self):
-        return False
+        players, bullets = self.sort(self.entities)
+        gameover = False
+        for player in players:
+            for bullet in bullets:
+                if player.position == bullet.position:
+                    print "Player", player.player_number, "lost at", bullet.position
+                    gameover = True
+        return gameover
     def valid_act(self, action, param):
         if not action in ["move", "fire"]:
             return False
@@ -76,7 +104,8 @@ class Arena(object):
         #Grab each entity's planned action
         for entity in self.entities:
             entity.tentative = entity.act(self.entities)
-            print entity.tentative, entity.type, entity.position, id(entity)
+            if entity.type == "player":
+                print "Player", entity.player_number, entity.tentative, "at", entity.position
         births = []
         #Actually implement the actions
         for entity in self.entities:
@@ -102,7 +131,10 @@ class Arena(object):
 class PlayerA(Player):
     def act(self, entities):
         players, bullets = self.sort(entities)
-        return ("move", (1, 0))
+        enemy = players[0]
+        if self.position.x != enemy.position.x:
+            return ("move", ((enemy.position - self.position).direction().x, 0))
+        return ("fire", (enemy.position - self.position).direction())
 
 class PlayerB(Player):
     def act(self, entities):
@@ -112,7 +144,7 @@ class PlayerB(Player):
 
 if __name__ == "__main__":
     pygame.init()
-    game = Arena(Vector(128, 128), PlayerA, PlayerB)
+    game = Arena(Vector(20, 20), PlayerA, PlayerB)
     turns = 0
     while game.step():
         turns += 1
