@@ -1,4 +1,7 @@
 #!/usr/bin/env python2
+import pygame
+from pygame.locals import *
+from time import sleep
 
 class Vector(object):
     def __init__(self, x, y):
@@ -34,7 +37,7 @@ class Bullet(Entity):
     def __init__(self, position, direction):
         self.direction = direction
         self.type = "bullet"
-        super(Bullet, self).__init__(self, position)
+        super(Bullet, self).__init__(position)
     def act(self, entities):
         return ("move", self.direction)
 
@@ -42,16 +45,25 @@ class Player(Entity):
     def __init__(self, position, ammo=128):
         self.type = "player"
         self.ammo = ammo
-        super(Player, self).__init__(self, position)
+        super(Player, self).__init__(position)
+    def sort(self, entities):
+        other_players = []
+        bullets = []
+        for entity in entities:
+            if entity.type == "bullet":
+                bullets.append(entity)
+            elif entity.type == "player" and not entity is self:
+                other_players.append(entity)
+        return other_players, bullets
 
 class Arena(object):
     def __init__(self, size, player1, player2):
         self.size = size
         self.entities = [player1(Vector(0, 0)), player2(size + (-1, -1))]
     def check_valid(self):
-        pass
+        return True
     def check_win(self):
-        pass
+        return False
     def valid_act(self, action, param):
         if not action in ["move", "fire"]:
             return False
@@ -64,7 +76,8 @@ class Arena(object):
         #Grab each entity's planned action
         for entity in self.entities:
             entity.tentative = entity.act(self.entities)
-        
+            print entity.tentative, entity.type, entity.position, id(entity)
+        births = []
         #Actually implement the actions
         for entity in self.entities:
             action, param = entity.tentative
@@ -78,15 +91,34 @@ class Arena(object):
                 #Drop by 1 ammo
                 entity.ammo -= 1
                 #Spawn a new bullet
-                self.entities.append(Bullet(entity.position + param, param))
+                births.append(Bullet(entity.position + param, param))
             elif action == "move":
                 entity.position += param
+        self.entities += births
+        if not self.check_valid():
+            return False
+        return not self.check_win()
+
+class PlayerA(Player):
+    def act(self, entities):
+        players, bullets = self.sort(entities)
+        return ("move", (1, 0))
+
+class PlayerB(Player):
+    def act(self, entities):
+        players, bullets = self.sort(entities)
+        return ("fire", (1, 0))
 
 
-
-
-
-
+if __name__ == "__main__":
+    pygame.init()
+    game = Arena(Vector(128, 128), PlayerA, PlayerB)
+    turns = 0
+    while game.step():
+        turns += 1
+        print "Round", turns, "complete."
+        sleep(1)
+    print "Game over."
 
 
 
