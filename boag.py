@@ -150,7 +150,7 @@ if __name__ == "__main__":
         turns += 1
         print "Round", turns, "complete."
         sleep(1)
-    print "Game over."
+    print "Game over in", turns + 1, "rounds."
 
 
 
