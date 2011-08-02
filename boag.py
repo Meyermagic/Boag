@@ -86,6 +86,12 @@ class Arena(object):
         if not param in [(0, 1), (0, -1), (1, 0), (-1, 0)]:
             return False
         return True
+    def prune(self):
+        pruned = []
+        for entity in self.entities:
+            if entity.position.x >= 0 and entity.position.y >= 0 and entity.position.x < self.size.x and entity.position.y < self.size.y:
+                pruned.append(entity)
+        self.entities = pruned
     #Return False if game over
     def step(self):
         #Grab each entity's planned action
