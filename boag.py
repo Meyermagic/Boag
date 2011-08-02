@@ -3,7 +3,8 @@ import pygame
 from pygame.locals import *
 from time import sleep
 from vector import Vector
-
+from random import choice
+from itertools import product
 
 class Entity(object):
     def __init__(self, position):
@@ -22,7 +23,7 @@ class Bullet(Entity):
 
 class Player(Entity):
     player_number = 0
-    def __init__(self, position, world, ammo=256):
+    def __init__(self, position, world, ammo=1024):
         Player.player_number += 1
         self.player_number = Player.player_number
         self.type = "player"
@@ -50,7 +51,7 @@ class Player(Entity):
             if not direction in [(0, 1), (0, -1), (1, 0), (-1, 0)]:
                 return False
             t = self.position + direction
-            if t.x >= 0 and t.y >= 0 and t.x < size.x and t.y < size.y:
+            if t.x >= 0 and t.y >= 0 and t.x < self.world.x and t.y < self.world.y:
                 return True
         return False
 
@@ -138,17 +139,100 @@ def draw(arena, screen):
     screen.blit(pygame.transform.scale(new, screen.get_size()), (0, 0))
     pygame.display.update()
 
+class PlayItSafe(Player):
+    #Returns True if move might not lead to death on next turn (checks bullets)
+    def is_viable(self, move):
+        #Assumes move is legal.
+        enemy, bullets = self.sort(self.states["current"])
+        enemy = enemy[0]
+        action, direction = move
+        #Firing doesn't move us
+        if action == "fire":
+            direction = Vector(0, 0)
+        test_pos = self.position + direction
+        #Make sure we don't hit a bullet
+        for bullet in bullets:
+            if bullet.position + bullet.direction == test_pos:
+                return False
+        return True
+    #Returns True if move can't lead to death on next turn (is viable + enemy adjacency)
+    def is_safe(self, move):
+        #Assumes move is viable
+        enemy, bullets = self.sort(self.states["current"])
+        enemy = enemy[0]
+        action, direction = move
+        if action == "fire":
+            direction = Vector(0, 0)
+        test_pos = self.position + direction
+        for adj in [(0, 1), (0, -1), (1, 0), (-1, 0)]:
+            if enemy.position + adj == test_pos:
+                return False
+        return True
+    def act(self, entities):
+        possible = product(["fire", "move"], [(0, 1), (0, -1), (-1, 0), (1, 0)])
+        self.states["current"] = entities
+        legal = filter(self.is_legal, possible)
+        viable = filter(self.is_viable, legal)
+        safe = filter(self.is_safe, viable)
+        choices = []
+        if len(safe) != 0:
+            choices = safe
+        elif len(viable) != 0:
+            choices = viable
+        else:
+            #If there are no viable moves, then we should surrender.
+            #return ("surrender", None)
+            choices = legal
+        #Pick best move out of choices
+        return choice(choices)
+
+class SafeAndAttack(PlayItSafe):
+    def act(self, entities):
+        possible = product(["fire", "move"], [(0, 1), (0, -1), (-1, 0), (1, 0)])
+        self.states["current"] = entities
+        legal = filter(self.is_legal, possible)
+        viable = filter(self.is_viable, legal)
+        safe = filter(self.is_safe, viable)
+        choices = []
+        if len(safe) != 0:
+            choices = safe
+        elif len(viable) != 0:
+            choices = viable
+        else:
+            #If there are no viable moves, then we should surrender.
+            #return ("surrender", None)
+            choices = legal
+        enemy, bullets = self.sort(entities)
+        enemy = enemy[0]
+        if enemy.position.x == self.position.x or enemy.position.y == self.position.y:
+            tent = ("fire", (enemy.position - self.position).direction())
+            if tent in choices:
+                return tent
+        else:
+            diffx = abs(enemy.position.x - self.position.x)
+            diffy = abs(enemy.position.y - self.position.y)
+            if diffx <= diffy and diffx != 0:
+                tent = ("move", ((enemy.position - self.position).direction().x, 0))
+                if tent in choices:
+                    return tent
+            else:
+                tent = ("move", (0, (enemy.position - self.position).direction().y))
+                if tent in choices:
+                    return tent
+        return choice(choices)
+            
+
 if __name__ == "__main__":
     pygame.init()
     size = (800, 800)
     screen = pygame.display.set_mode(size)
-    game = Arena(Vector(20, 20), PlayerA, PlayerB)
+    game = Arena(Vector(20, 20), PlayItSafe, SafeAndAttack)
     turns = 0
     while game.step():
         turns += 1
         print "Round", turns, "complete."
         draw(game, screen)
-        sleep(1)
+        sleep(0.01)
     print "Game over in", turns + 1, "rounds."
 
 
