@@ -3,7 +3,7 @@ import pygame
 from pygame.locals import *
 from time import sleep
 from vector import Vector
-from random import choice
+from random import choice, randint
 from itertools import product
 
 class Entity(object):
@@ -203,6 +203,8 @@ class SafeAndAttack(PlayItSafe):
         choices = []
         if len(safe) != 0:
             choices = safe
+#            if randint(1, 100) == 1:
+#                return choice(choices)
         elif len(viable) != 0:
             choices = viable
         else:
@@ -227,13 +229,47 @@ class SafeAndAttack(PlayItSafe):
                 if tent in choices:
                     return tent
         return choice(choices)
-            
+
+class CloseInAttack(PlayItSafe):
+    def act(self, entities):
+        possible = product(["fire", "move"], [(0, 1), (0, -1), (-1, 0), (1, 0)])
+        self.states["current"] = entities
+        legal = filter(self.is_legal, possible)
+        viable = filter(self.is_viable, legal)
+        safe = filter(self.is_safe, viable)
+        choices = []
+        if len(safe) != 0:
+            choices = safe
+        elif len(viable) != 0:
+            choices = viable
+        else:
+            #If there are no viable moves, then we should surrender.
+            #return ("surrender", None)
+            choices = legal
+        enemy, bullets = self.sort(entities)
+        enemy = enemy[0]
+        if enemy.position.x == self.position.x or enemy.position.y == self.position.y:
+            tent = ("fire", (enemy.position - self.position).direction())
+            if tent in choices:
+                return tent
+        else:
+            diffx = abs(enemy.position.x - self.position.x)
+            diffy = abs(enemy.position.y - self.position.y)
+            if diffx >= diffy:
+                tent = ("move", ((enemy.position - self.position).direction().x, 0))
+                if tent in choices:
+                    return tent
+            else:
+                tent = ("move", (0, (enemy.position - self.position).direction().y))
+                if tent in choices:
+                    return tent
+        return choice(choices)
 
 if __name__ == "__main__":
     pygame.init()
     size = (800, 800)
     screen = pygame.display.set_mode(size)
-    game = Arena(Vector(20, 20), PlayItSafe, SafeAndAttack)
+    game = Arena(Vector(20, 20), CloseInAttack, CloseInAttack)
     turns = 0
     while game.step():
         turns += 1
