@@ -53,12 +53,13 @@ class Bullet(Entity):
 
 class Player(Entity):
     player_number = 0
-    def __init__(self, position, ammo=256):
+    def __init__(self, position, world, ammo=256):
         Player.player_number += 1
         self.player_number = Player.player_number
         self.type = "player"
         self.ammo = ammo
         self.states = dict()
+        self.world = world
         super(Player, self).__init__(position)
     def sort(self, entities):
         other_players = []
@@ -69,11 +70,25 @@ class Player(Entity):
             elif entity.type == "player" and not entity is self:
                 other_players.append(entity)
         return other_players, bullets
+    #Returns True if move is legal (checks bullet count and boundaries)
+    def is_legal(self, move):
+        action, direction = move
+        if action == "fire":
+            if direction in [(0, 1), (0, -1), (1, 0), (-1, 0)] and self.ammo > 0:
+                return True
+            return False
+        elif action == "move":
+            if not direction in [(0, 1), (0, -1), (1, 0), (-1, 0)]:
+                return False
+            t = self.position + direction
+            if t.x >= 0 and t.y >= 0 and t.x < size.x and t.y < size.y:
+                return True
+        return False
 
 class Arena(object):
     def __init__(self, size, player1, player2):
         self.size = size
-        self.entities = [player1(Vector(0, 0)), player2(size + (-1, -1))]
+        self.entities = [player1(Vector(0, 0), size), player2(size - (1, 1), size)]
     def sort(self, entities):
         players = []
         bullets = []
@@ -142,6 +157,8 @@ class PlayerB(Player):
     def act(self, entities):
         players, bullets = self.sort(entities)
         return ("fire", (-1, 0))
+
+
 
 def draw(arena, screen):
     new = pygame.Surface((arena.size.x, arena.size.y))
