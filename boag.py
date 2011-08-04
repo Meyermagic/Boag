@@ -1,4 +1,5 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
+#Might want python2 here instead.
 import pygame
 from pygame.locals import *
 from pygame.time import Clock
@@ -25,13 +26,17 @@ if __name__ == "__main__":
     game = Arena(Vector(20, 20), CornerAttacker, PlayItSafe)
     clock = Clock()
     turns = 0
-    while game.step():
+    running = True
+    while game.step() and running:
         turns += 1
         print "Round", turns, "complete."
         draw(game, screen)
+        for event in pygame.event.get():
+            if event.type == QUIT:
+                running = False
         clock.tick(20)
     print "Game over in", turns + 1, "rounds."
-
+    pygame.quit()
 
 
 
