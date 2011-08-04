@@ -1,7 +1,7 @@
 #!/usr/bin/env python2
 import pygame
 from pygame.locals import *
-from time import sleep
+from pygame.time import Clock
 from boag.arena import Arena
 from boag.ai import CornerAttacker, PlayItSafe
 from boag.vector import Vector
@@ -23,12 +23,13 @@ if __name__ == "__main__":
     size = (800, 800)
     screen = pygame.display.set_mode(size)
     game = Arena(Vector(20, 20), CornerAttacker, PlayItSafe)
+    clock = Clock()
     turns = 0
     while game.step():
         turns += 1
         print "Round", turns, "complete."
         draw(game, screen)
-        sleep(0.1)
+        clock.tick(20)
     print "Game over in", turns + 1, "rounds."
 
 
