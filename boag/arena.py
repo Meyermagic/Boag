@@ -45,10 +45,6 @@ class Arena(object):
     
     #Returns (Is Game Over, Winner (0 for stalemate))
     def check_gameover(self):
-        for player in self.team_a.players:
-            print "a", player.alive, player.position, player.ammo
-        for player in self.team_b.players:
-            print "b", player.alive, player.position, player.ammo
         if not self.team_a.has_living():
             if self.team_b.has_living():
                 return True, self.team_b.team_number

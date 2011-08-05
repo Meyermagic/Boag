@@ -36,7 +36,7 @@ class Team(object):
             if player.alive:
                 return True
         return False
-    
+        
     def count_ammo(self):
         total = 0
         for player in self.players:
