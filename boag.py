@@ -38,7 +38,7 @@ if __name__ == "__main__":
             turns += 1
             print "Round", turns, "complete."
             draw(game, screen)
-            clock.tick(200)
+            clock.tick(20)
         print "Game over in", turns + 1, "rounds."
     
     pygame.quit()
