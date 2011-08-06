@@ -22,10 +22,11 @@ if __name__ == "__main__":
     size = (800, 800)
     screen = pygame.display.set_mode(size)
     
-    team_1 = Team([PlayItSafe] * 3)
-    team_2 = Team([PlayItSafe] * 3)
-    team_3 = Team([PlayItSafe] * 3)
-    tournament = Tournament([team_1, team_2, team_3], Vector(30, 30))
+    teams = []
+    
+    teams.append(Team([PlayItSafe] * 4))
+    teams.append(Team([PlayItSafe] * 4))
+    tournament = Tournament(teams, Vector(40, 40))
     
     clock = Clock()
     
@@ -36,10 +37,12 @@ if __name__ == "__main__":
                 if event.type == pygame.QUIT:
                     pygame.quit()
             turns += 1
-            print "Round", turns, "complete."
+            print "Round %d complete." % turns
+            print "Team A: %d alive, %d shots remaining." % (game.team_a.count_living(), game.team_a.count_ammo())
+            print "Team B: %d alive, %d shots remaining." % (game.team_b.count_living(), game.team_b.count_ammo())
             draw(game, screen)
             clock.tick(20)
-        print "Game over in", turns + 1, "rounds."
+        print "Game over in %d rounds." % (turns + 1)
     
     pygame.quit()
 
